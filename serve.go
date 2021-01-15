@@ -116,6 +116,8 @@ func (h healthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	resp := h.processAndEnsureCached(r.Context(), negotiatedContentType, outputer)
 	w.Header().Set(http.CanonicalHeaderKey("Content-Type"), negotiatedContentType)
+	w.Header().Set("X-Paasta-Pod", os.Getenv("POD_NAME"))
+	w.Header().Set("X-Paasta-Host", os.Getenv("PAASTA_HOST"))
 	w.WriteHeader(resp.statusCode)
 	resp.body.WriteTo(w)
 
@@ -251,7 +253,7 @@ func WithRequestLogger(next http.Handler) http.Handler {
 		}
 		logData := log.Fields{
 			"timestamp":  startTime.Format("02/Jan/2006:15:04:05 -0700"),
-			"host":       host,
+			"client":     host,
 			"method":     r.Method,
 			"uri":        r.RequestURI,
 			"proto":      r.Proto,
@@ -260,6 +262,8 @@ func WithRequestLogger(next http.Handler) http.Handler {
 			"duration":   finTime.Sub(startTime).String(),
 			"headers":    r.Header,
 			"status":     recorder.Status,
+			"podIP":      os.Getenv("PAASTA_POD_IP"),
+			"serverIP":   os.Getenv("PAASTA_HOST"),
 		}
 		requestLogger.WithFields(logData).Infoln()
 	})
